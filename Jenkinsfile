@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        //be sure to replace "tarasleto96" with your own Docker Hub username
+        //be sure to replace ".tarasleto96" with your own Docker Hub username
         DOCKER_IMAGE_NAME = "tarasleto96/train-schedule"
         CANARY_REPLICAS = 0
     }
@@ -54,22 +54,23 @@ pipeline {
                 )
             }
         }
-        stage ('SmokeTest') {
+        stage('SmokeTest') {
             when {
                 branch 'master'
             }
             steps {
                 script {
-                    def respose =hhtpRequest (
+                    sleep (time: 5)
+                    def response = httpRequest (
                         url: "http://$KUBE_MASTER_IP:8081/",
-                        timeout:30
-                        )
-                    if (response.status != 200){
-                        error ("Smoke test against canary deployment failed")
+                        timeout: 30
+                    )
+                    if (response.status != 200) {
+                        error("Smoke test against canary deployment failed.")
                     }
                 }
             }
-        }     
+        }
         stage('DeployToProduction') {
             when {
                 branch 'master'
@@ -86,11 +87,11 @@ pipeline {
     }
     post {
         cleanup {
-            kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true 
-                )
-        }   
+            kubernetesDeploy (
+                kubeconfigId: 'kubeconfig',
+                configs: 'train-schedule-kube-canary.yml',
+                enableConfigSubstitution: true
+            )
+        }
     }
 }
